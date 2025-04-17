@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista Gier</title>
+</head>
+<body>
+  <h1>Moja Lista Gier</h1>
+
+  <table id="gamesTable" border="1">
+    <thead>
+      <tr>
+        <th>Nazwa gry</th>
+        <th>Link</th>
+        <th>Dostępność</th>
+        <th>Ostatnia aktualizacja</th>
+        <th>Notatki</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>Dodaj nową grę</h2>
+  <form id="gameForm">
+    <input type="text" id="nazwa" placeholder="Nazwa gry" required><br>
+    <input type="url" id="link" placeholder="Link do sklepu"><br>
+    <input type="text" id="notatki" placeholder="Notatki"><br>
+    <button type="submit">Dodaj</button>
+  </form>
+
+  <p id="status"></p>
+
+  <script>
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRxTnDmPY650EMJflIqogJKRALHxQxu8gy5mEcBoWikjncGsnmYGHAixaT0iCtwsGHB55A_u3NDVtPP/pub?gid=0&single=true&output=csv';
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbxRQzS4jDXIoij39MukOoryOyNsiRSG5kl6Ysu0JIj_fL2eqrpX28AErqCgk-u5fTnHvw/exec';
+
+    function loadGames() {
+      fetch(sheetUrl)
+        .then(res => res.text())
+        .then(data => {
+          const rows = data.split('\n').slice(1);
+          const tbody = document.getElementById('gamesTable').querySelector('tbody');
+          tbody.innerHTML = '';
+          rows.forEach(row => {
+            const cols = row.split(',');
+            if (cols.length >= 5) {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${cols[0]}</td>
+                <td><a href="${cols[1]}" target="_blank">Sklep</a></td>
+                <td>${cols[2]}</td>
+                <td>${cols[3]}</td>
+                <td>${cols[4]}</td>
+              `;
+              tbody.appendChild(tr);
+            }
+          });
+        });
+    }
+
+    document.getElementById('gameForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const nazwa = document.getElementById('nazwa').value;
+      const link = document.getElementById('link').value;
+      const notatki = document.getElementById('notatki').value;
+
+      fetch(scriptUrl, {
+        method: 'POST',
+        body: JSON.stringify({ nazwa, link, notatki }),
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(res => res.text())
+      .then(res => {
+        document.getElementById('status').innerText = 'Gra została dodana!';
+        document.getElementById('gameForm').reset();
+        loadGames(); // odśwież listę
+      })
+      .catch(err => {
+        document.getElementById('status').innerText = 'Błąd dodawania gry.';
+        console.error(err);
+      });
+    });
+
+    loadGames();
+  </script>
+</body>
+</html>
